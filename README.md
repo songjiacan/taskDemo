@@ -4,7 +4,7 @@
 
 This is a normal maven project. The fast way to start the project is load from intellij
 
-Run 
+Run program with IDE or command line
 ```
 mvn package
 ```
@@ -14,6 +14,15 @@ But it has some version compatible problem for Maven Assembly Plugin with error 
 Alternatively, run it with 
 ```
 mvn package exec:java -Dexec.mainClass=org.openSky.example.App
+```
+
+Run it in Docker
+```
+docker build -t scala-spark-demo .
+```
+After the image is built
+```
+docker run scala-spark-demo
 ```
 
 This project take a sample zip file which contains a csv file as input, 
