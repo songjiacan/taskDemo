@@ -5,8 +5,10 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{col, round, sum}
+import org.slf4j.LoggerFactory
 
-import java.io.{File, FileOutputStream}
+import java.io.{File, FileInputStream, FileNotFoundException, FileOutputStream}
+import java.util.Properties
 import java.util.zip.ZipInputStream
 import scala.annotation.tailrec
 
@@ -20,20 +22,31 @@ import scala.annotation.tailrec
  */
 object App {
 
+  private val logger = LoggerFactory.getLogger(getClass)
+
   def main(args: Array[String]) {
+    val propertiesFile = getClass.getResourceAsStream("/application.properties")
+
+    val properties: Properties = new Properties()
+    if (propertiesFile != null) {
+      properties.load(propertiesFile)
+    }
+    else {
+      logger.error("properties file cannot be loaded ")
+      throw new FileNotFoundException("Properties file cannot be loaded")
+    }
 
     // Create a SparkSession
     val spark = SparkSession.builder()
       .appName("CSV Data Processing")
       .master("local[*]") // Use all available cores
       .getOrCreate()
-
     // Read input data
-    val zipFilePath = "src/main/resources/sales_data_sample.csv.zip"
+    val zipFilePath = properties.getProperty("zipFilePath")
     extractCSVFromZip(zipFilePath)
     val df = spark.read
       .option("header", "true") // Use first row as header
-      .csv("sales_data_sample.csv")
+      .csv(properties.getProperty("sourceCSVPath"))
 
     val filteredDF = df.filter(col("STATUS") === "Shipped")
 
@@ -57,18 +70,18 @@ object App {
       .csv("tmpResults")
 
     //merge part-uuid.csv to output.csv and delete other files generated
-    mergeCSVFiles("tmpResults")
+    mergeCSVFiles("tmpResults", properties.getProperty("outputResult"))
 
     // Stop the SparkSession
     spark.stop()
     //
   }
 
-  def mergeCSVFiles(filePath: String): Unit = {
+  def mergeCSVFiles(sourceFilePath: String, destinationFilePath: String): Unit = {
     val hadoopConfig = new Configuration()
     val hdfs = FileSystem.get(hadoopConfig)
-    val srcPath = new Path(filePath)
-    val destPath = new Path("result/output.csv")
+    val srcPath = new Path(sourceFilePath)
+    val destPath = new Path(destinationFilePath)
     FileUtils.deleteQuietly(new File("result/output.csv"))
 
     val srcFile = FileUtil.listFiles(new File("tmpResults"))
@@ -118,7 +131,7 @@ object App {
 
     writeEntry()
     outputStream.close()
-    println(s"Saved $fileName")
+    logger.info(s"Extract CSV $fileName from zip to process ")
   }
 
 }

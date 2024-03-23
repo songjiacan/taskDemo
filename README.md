@@ -2,18 +2,22 @@
 
 ## Usage
 
-This is a normal maven project. The fast way to start the project is load from intellij
+This is a normal maven project. 
+The fast way to start the project is load from intellij, configure project java version to be java 8, like temurin-1.8.0_402
 
-Run program with IDE or command line
+Run it from command line, make sure the java version from command line is java 8, it will have compatible problem for higher java version with Maven Assembly Plugin with error "exec-maven-plugin:3.2.0:java are missing or invalid"
 ```
-mvn package
+mvn clean install
 ```
-should create target/taskDemo-1.0-SNAPSHOT-jar-with-dependencies.jar
-But it has some version compatible problem for Maven Assembly Plugin with error "exec-maven-plugin:3.2.0:java are missing or invalid"
 
 Alternatively, run it with 
 ```
-mvn package exec:java -Dexec.mainClass=org.openSky.example.App
+mvn package
+```
+Should create target/taskDemo-1.0-SNAPSHOT-jar-with-dependencies.jar
+Then invoke the jar file by provide executable java8 full path if default java is other version
+```
+/Users/jiacansong/Library/Java/JavaVirtualMachines/temurin-1.8.0_402/Contents/Home/bin/java -jar target/taskDemo-1.0-SNAPSHOT-jar-with-dependencies.jar
 ```
 
 Run it in Docker
