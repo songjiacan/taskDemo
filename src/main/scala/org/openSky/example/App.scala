@@ -3,11 +3,11 @@ package org.openSky.example
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{col, round, sum}
+import org.apache.spark.sql.{Dataset, Row, SparkSession}
+import org.apache.spark.sql.functions.{col, count, lit, round, sum}
 import org.slf4j.LoggerFactory
 
-import java.io.{File, FileInputStream, FileNotFoundException, FileOutputStream}
+import java.io.{File, FileNotFoundException, FileOutputStream}
 import java.util.Properties
 import java.util.zip.ZipInputStream
 import scala.annotation.tailrec
@@ -41,21 +41,13 @@ object App {
       .appName("CSV Data Processing")
       .master("local[*]") // Use all available cores
       .getOrCreate()
+
     // Read input data
     val zipFilePath = properties.getProperty("zipFilePath")
+
     extractCSVFromZip(zipFilePath)
-    val df = spark.read
-      .option("header", "true") // Use first row as header
-      .csv(properties.getProperty("sourceCSVPath"))
 
-    val filteredDF = df.filter(col("STATUS") === "Shipped")
-
-    // Calculate average sales amount for each year by PRODUCTLINE
-    val avgSalesDF = filteredDF.groupBy("YEAR_ID", "PRODUCTLINE")
-      .agg(round(sum("SALES") / sum("QUANTITYORDERED"), 2).as("AVERAGE_SALES_AMT"))
-
-    // Order the results by YEAR_ID and PRODUCTLINE
-    val orderedDF = avgSalesDF.orderBy("YEAR_ID", "PRODUCTLINE")
+    val orderedDF = generateDataFrameFromInputCSVFile(spark, properties.getProperty("sourceCSVPath"))
 
     //debug to be deleted
     orderedDF.show()
@@ -74,7 +66,22 @@ object App {
 
     // Stop the SparkSession
     spark.stop()
-    //
+  }
+
+  def generateDataFrameFromInputCSVFile(sparkSession: SparkSession, sourceFilePath: String): Dataset[Row] = {
+    val df = sparkSession.read
+      .option("header", "true") // Use first row as header
+      .csv(sourceFilePath)
+
+    val filteredDF = df.filter(col("STATUS") === "Shipped")
+
+    // Calculate average sales amount for each year by PRODUCTLINE
+    val avgSalesDF = filteredDF.groupBy("YEAR_ID", "PRODUCTLINE")
+      .agg(round(sum("SALES") / count(lit(1)), 2).as("AVERAGE_SALES_AMT"))
+
+    // Order the results by YEAR_ID and PRODUCTLINE
+    avgSalesDF.orderBy("YEAR_ID", "PRODUCTLINE")
+
   }
 
   def mergeCSVFiles(sourceFilePath: String, destinationFilePath: String): Unit = {
