@@ -37,10 +37,4 @@ groupBy "YEAR_ID" and "PRODUCTLINE", calculate average sales' price by total sal
 
 Then generate results to a temp folder, then merge all csv files into one file called "output.csv", saved under relative path 'result'
 
-Input file located at 
-src/main/resources/sales_data_sample.csv.zip
-
-## Note:
-1,File names, Path names, file format are all hardcoded, It just for demo purpose, it should be stored at properties files.
-2,No unit test has implemented yet.
-3,The program is manual test by a small sample "sales_data_sample2.csv", If use this file as input, the actual result should be only one line with 96.2 in column 'AVERAGE_SALES_AMT' in generated csv file
+Put the Input file path to json path app.filePath.sourceZIP of application.conf

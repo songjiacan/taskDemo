@@ -23,10 +23,15 @@ class AppTest extends AnyFunSuite with BeforeAndAfterAll {
 
   test("Test CSV file for row with 'AVERAGE_SALES_AMT' column equal to 3570.18") {
     // Filter DataFrame to find rows where 'AVERAGE_SALES_AMT' column is equal to 3570.18
+    val yearIdDF = df.filter($"YEAR_ID" === 2003)
+    val productLineDF = df.filter($"PRODUCTLINE".contains("Motorcycles"))
     val filteredDF = df.filter($"AVERAGE_SALES_AMT" === 3570.18)
 
     // Check if there is at least one row in the DataFrame
-    assert(filteredDF.count() >= 1, "CSV file does not contain row with 'AVERAGE_SALES_AMT' column equal to 3")
+    assert(df.count() == 1, "CSV file total row is 1")
+    assert(yearIdDF.count() == 1, "CSV file contain row with 'YEAR_ID' column equal to 2003")
+    assert(productLineDF.count() == 1, "CSV file contain row with 'PRODUCTLINE' column equal to 'Classic Cars'")
+    assert(filteredDF.count() == 1, "CSV file does contain row with 'AVERAGE_SALES_AMT' column equal to 3570.18")
   }
 
   override protected def afterAll(): Unit = {

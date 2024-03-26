@@ -7,8 +7,7 @@ import org.apache.spark.sql.{Dataset, Row, SparkSession}
 import org.apache.spark.sql.functions.{col, count, lit, round, sum}
 import org.slf4j.LoggerFactory
 
-import java.io.{File, FileNotFoundException, FileOutputStream}
-import java.util.Properties
+import java.io.{File, FileOutputStream}
 import java.util.zip.ZipInputStream
 import scala.annotation.tailrec
 
@@ -25,17 +24,6 @@ object App {
   private val logger = LoggerFactory.getLogger(getClass)
 
   def main(args: Array[String]) {
-    val propertiesFile = getClass.getResourceAsStream("/application.properties")
-
-    val properties: Properties = new Properties()
-    if (propertiesFile != null) {
-      properties.load(propertiesFile)
-    }
-    else {
-      logger.error("properties file cannot be loaded ")
-      throw new FileNotFoundException("Properties file cannot be loaded")
-    }
-
     // Create a SparkSession
     val spark = SparkSession.builder()
       .appName("CSV Data Processing")
@@ -43,11 +31,11 @@ object App {
       .getOrCreate()
 
     // Read input data
-    val zipFilePath = properties.getProperty("zipFilePath")
+    val zipFilePath = AppConfig.filePath.sourceZipFilePath
 
     extractCSVFromZip(zipFilePath)
 
-    val orderedDF = generateDataFrameFromInputCSVFile(spark, properties.getProperty("sourceCSVPath"))
+    val orderedDF = generateDataFrameFromInputCSVFile(spark, AppConfig.filePath.sourceCSVFilePath)
 
     //debug to be deleted
     orderedDF.show()
@@ -62,7 +50,7 @@ object App {
       .csv("tmpResults")
 
     //merge part-uuid.csv to output.csv and delete other files generated
-    mergeCSVFiles("tmpResults", properties.getProperty("outputResult"))
+    mergeCSVFiles("tmpResults", AppConfig.filePath.outputPath)
 
     // Stop the SparkSession
     spark.stop()
@@ -89,9 +77,9 @@ object App {
     val hdfs = FileSystem.get(hadoopConfig)
     val srcPath = new Path(sourceFilePath)
     val destPath = new Path(destinationFilePath)
-    FileUtils.deleteQuietly(new File("result/output.csv"))
+    FileUtils.deleteQuietly(new File(AppConfig.filePath.outputPath))
 
-    val srcFile = FileUtil.listFiles(new File("tmpResults"))
+    val srcFile = FileUtil.listFiles(new File(AppConfig.filePath.outputTempPath))
       .filter(f => f.getPath.endsWith(".csv"))(0)
     //Copy the CSV file outside of Directory and rename
     FileUtil.copy(srcFile, hdfs, destPath, false, hadoopConfig)
